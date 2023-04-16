@@ -1,6 +1,12 @@
 package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.ArrayList;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -21,8 +27,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Controller implements Initializable {
 
     @FXML
-    ListView<Message> chatContentList;
+    ListView<Message> chatContentList;//保留的文本信息
 
+    @FXML
+    private ListView<?> chatList;//可选的聊天人群
+    @FXML
+    private TextArea inputArea;//输入的文本
+    @FXML
+    private Label currentOnlineCnt;//当前在线人数
+    @FXML
+    private Label currentUsername;
     String username;
 
     @Override
@@ -40,6 +54,30 @@ public class Controller implements Initializable {
                      if so, ask the user to change the username
              */
             username = input.get();
+            try (Socket socket = new Socket(username, 55533)) {
+                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+
+                out.writeObject("GetUserList:");//向服务器提出要求，获取所有的用户
+                out.flush();
+                // 从输入流中读取 ArrayList 的字节流，并反序列化成 ArrayList
+                @SuppressWarnings("unchecked")
+                ArrayList<String> list = (ArrayList<String>) in.readObject();
+                if (list.contains(username)) {
+                    System.out.println("Exist same name");
+                    Platform.exit();
+                } else {
+                    out.writeObject("AddNewUser");
+                    out.flush();
+                    out.writeObject(username);
+                    out.close();
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Connected to server...");
+
+
         } else {
             System.out.println("Invalid username " + input + ", exiting");
             Platform.exit();
@@ -76,14 +114,13 @@ public class Controller implements Initializable {
     }
 
     /**
-     * A new dialog should contain a multi-select list, showing all user's name.
-     * You can select several users that will be joined in the group chat, including yourself.
+     * A new dialog should contain a multi-select list, showing all user's name. You can select
+     * several users that will be joined in the group chat, including yourself.
      * <p>
-     * The naming rule for group chats is similar to WeChat:
-     * If there are > 3 users: display the first three usernames, sorted in lexicographic order, then use ellipsis with the number of users, for example:
-     * UserA, UserB, UserC... (10)
-     * If there are <= 3 users: do not display the ellipsis, for example:
-     * UserA, UserB (2)
+     * The naming rule for group chats is similar to WeChat: If there are > 3 users: display the
+     * first three usernames, sorted in lexicographic order, then use ellipsis with the number of
+     * users, for example: UserA, UserB, UserC... (10) If there are <= 3 users: do not display the
+     * ellipsis, for example: UserA, UserB (2)
      */
     @FXML
     public void createGroupChat() {
@@ -92,8 +129,8 @@ public class Controller implements Initializable {
     /**
      * Sends the message to the <b>currently selected</b> chat.
      * <p>
-     * Blank messages are not allowed.
-     * After sending the message, you should clear the text input field.
+     * Blank messages are not allowed. After sending the message, you should clear the text input
+     * field.
      */
     @FXML
     public void doSendMessage() {
@@ -101,10 +138,12 @@ public class Controller implements Initializable {
     }
 
     /**
-     * You may change the cell factory if you changed the design of {@code Message} model.
-     * Hint: you may also define a cell factory for the chats displayed in the left panel, or simply override the toString method.
+     * You may change the cell factory if you changed the design of {@code Message} model. Hint: you
+     * may also define a cell factory for the chats displayed in the left panel, or simply override
+     * the toString method.
      */
     private class MessageCellFactory implements Callback<ListView<Message>, ListCell<Message>> {
+
         @Override
         public ListCell<Message> call(ListView<Message> param) {
             return new ListCell<Message>() {
