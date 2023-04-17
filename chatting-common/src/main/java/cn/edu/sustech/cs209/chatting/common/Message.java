@@ -1,35 +1,50 @@
 package cn.edu.sustech.cs209.chatting.common;
 
-public class Message {
+import java.io.Serializable;
+import java.util.HashSet;
 
-    private Long timestamp;
+public class Message implements Serializable {
 
-    private String sentBy;
+  MessageType type;
+  MessageSent messageSent;
+  HashSet<String> users;
+  String username;
 
-    private String sendTo;
+  public Message(MessageType messageType) {
+    this.type = messageType;
+    messageSent = null;
+    users = new HashSet<>();
+  }
 
-    private String data;
+  public void setMessageSent(MessageSent messageSent) {
+    this.messageSent = messageSent;
+  }
 
-    public Message(Long timestamp, String sentBy, String sendTo, String data) {
-        this.timestamp = timestamp;
-        this.sentBy = sentBy;
-        this.sendTo = sendTo;
-        this.data = data;
-    }
+  public MessageType getType() {
+    return type;
+  }
 
-    public Long getTimestamp() {
-        return timestamp;
-    }
+  public HashSet<String> getUsers() {
+    return users;
+  }
 
-    public String getSentBy() {
-        return sentBy;
-    }
+  public void setType(MessageType type) {
+    this.type = type;
+  }
 
-    public String getSendTo() {
-        return sendTo;
-    }
+  public void setUsers(HashSet<String> users) {
+    this.users = users;
+  }
 
-    public String getData() {
-        return data;
-    }
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public MessageSent getMessageSent() {
+    return messageSent;
+  }
 }

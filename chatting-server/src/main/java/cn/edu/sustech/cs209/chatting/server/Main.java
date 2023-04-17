@@ -27,14 +27,14 @@ public class Main {
       new Thread(() -> {
         while (true) {
           try {
-            Socket finalSocket = server.accept();
+            Socket socket = server.accept();
             Runnable runnable = () -> {
               try {
                 ObjectInputStream in = new ObjectInputStream(
-                    finalSocket.getInputStream());
+                    socket.getInputStream());
                 String s = (String) in.readObject();
                 if (s.equals("GetUserList:")) {
-                  MyServer.getUsers(finalSocket);
+                  MyServer.getUsers(socket);
                   try {
                     String s1 = (String) in.readObject();
                     if (s1.equals("AddNewUser")) {

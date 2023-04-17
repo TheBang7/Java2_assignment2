@@ -1,12 +1,18 @@
 package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
+import cn.edu.sustech.cs209.chatting.common.MessageSent;
+import cn.edu.sustech.cs209.chatting.common.MessageType;
+import com.sun.xml.internal.bind.v2.model.core.Adapter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -24,159 +30,154 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 
+
 public class Controller implements Initializable {
 
-    @FXML
-    ListView<Message> chatContentList;//保留的文本信息
+  public HashSet<String> UserList;
 
-    @FXML
-    private ListView<?> chatList;//可选的聊天人群
-    @FXML
-    private TextArea inputArea;//输入的文本
-    @FXML
-    private Label currentOnlineCnt;//当前在线人数
-    @FXML
-    private Label currentUsername;
-    String username;
+  @FXML
+  ListView<MessageSent> chatContentList;//保留的文本信息
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
+  @FXML
+  private ListView<?> chatList;//可选的聊天人群
+  @FXML
+  private TextArea inputArea;//输入的文本
+  @FXML
+  private Label currentOnlineCnt;//当前在线人数
+  @FXML
+  private Label currentUsername;
+  String username;
+  public static ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(16, 32, 1,
+      TimeUnit.MINUTES, new ArrayBlockingQueue<>(16));
+  private clientListener listener;
 
-        Dialog<String> dialog = new TextInputDialog();
-        dialog.setTitle("Login");
-        dialog.setHeaderText(null);
-        dialog.setContentText("Username:");
+  @Override
+  public void initialize(URL url, ResourceBundle resourceBundle) {
 
-        Optional<String> input = dialog.showAndWait();
-        if (input.isPresent() && !input.get().isEmpty()) {
+    Dialog<String> dialog = new TextInputDialog();
+    dialog.setTitle("Login");
+    dialog.setHeaderText(null);
+    dialog.setContentText("Username:");
+    ;
+
+    Optional<String> input = dialog.showAndWait();
+    if (input.isPresent() && !input.get().isEmpty()) {
             /*
                TODO: Check if there is a user with the same name among the currently logged-in users,
                      if so, ask the user to change the username
              */
-            username = input.get();
-            try (Socket socket = new Socket(username, 55533)) {
-                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-
-                out.writeObject("GetUserList:");//向服务器提出要求，获取所有的用户
-                out.flush();
-                // 从输入流中读取 ArrayList 的字节流，并反序列化成 ArrayList
-                @SuppressWarnings("unchecked")
-                ArrayList<String> list = (ArrayList<String>) in.readObject();
-                if (list.contains(username)) {
-                    System.out.println("Exist same name");
-                    Platform.exit();
-                } else {
-                    out.writeObject("AddNewUser");
-                    out.flush();
-                    out.writeObject(username);
-                    out.close();
-                }
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Connected to server...");
-
-
-        } else {
-            System.out.println("Invalid username " + input + ", exiting");
-            Platform.exit();
-        }
-
-        chatContentList.setCellFactory(new MessageCellFactory());
+      username = input.get();
+      listener = new clientListener("localhost", 1234, username, this);
+      //将监听器加入到线程池
+      poolExecutor.execute(listener);
+    } else {
+      System.out.println("Invalid username " + input + ", exiting");
+      Platform.exit();
     }
+    chatContentList.setCellFactory(new MessageCellFactory());
+  }
 
-    @FXML
-    public void createPrivateChat() {
-        AtomicReference<String> user = new AtomicReference<>();
+  public void upDateUsers() {
+    currentUsername.setText("CurrentUser:" + username);
+    currentOnlineCnt.setText(String.valueOf("currentOnlineCnt:" + UserList.size()));
+  }
 
-        Stage stage = new Stage();
-        ComboBox<String> userSel = new ComboBox<>();
+  @FXML
+  public void createPrivateChat() throws IOException {
+    AtomicReference<String> user = new AtomicReference<>();
 
-        // FIXME: get the user list from server, the current user's name should be filtered out
-        userSel.getItems().addAll("Item 1", "Item 2", "Item 3");
+    Stage stage = new Stage();
+    ComboBox<String> userSel = new ComboBox<>();
 
-        Button okBtn = new Button("OK");
-        okBtn.setOnAction(e -> {
-            user.set(userSel.getSelectionModel().getSelectedItem());
-            stage.close();
-        });
+    // FIXME: get the user list from server, the current user's name should be filtered out
+    HashSet<String> temp = new HashSet<>(UserList);
+    temp.remove(username);
+    userSel.getItems().addAll(temp);
 
-        HBox box = new HBox(10);
-        box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(20, 20, 20, 20));
-        box.getChildren().addAll(userSel, okBtn);
-        stage.setScene(new Scene(box));
-        stage.showAndWait();
+    Button okBtn = new Button("OK");
+    okBtn.setOnAction(e -> {
+      user.set(userSel.getSelectionModel().getSelectedItem());
+      stage.close();
+    });
 
-        // TODO: if the current user already chatted with the selected user, just open the chat with that user
-        // TODO: otherwise, create a new chat item in the left panel, the title should be the selected user's name
-    }
+    HBox box = new HBox(10);
+    box.setAlignment(Pos.CENTER);
+    box.setPadding(new Insets(20, 20, 20, 20));
+    box.getChildren().addAll(userSel, okBtn);
+    stage.setScene(new Scene(box));
+    stage.showAndWait();
 
-    /**
-     * A new dialog should contain a multi-select list, showing all user's name. You can select
-     * several users that will be joined in the group chat, including yourself.
-     * <p>
-     * The naming rule for group chats is similar to WeChat: If there are > 3 users: display the
-     * first three usernames, sorted in lexicographic order, then use ellipsis with the number of
-     * users, for example: UserA, UserB, UserC... (10) If there are <= 3 users: do not display the
-     * ellipsis, for example: UserA, UserB (2)
-     */
-    @FXML
-    public void createGroupChat() {
-    }
+    // TODO: if the current user already chatted with the selected user, just open the chat with that user
+    // TODO: otherwise, create a new chat item in the left panel, the title should be the selected user's name
+    System.out.println("Selected user: " + user.get());
 
-    /**
-     * Sends the message to the <b>currently selected</b> chat.
-     * <p>
-     * Blank messages are not allowed. After sending the message, you should clear the text input
-     * field.
-     */
-    @FXML
-    public void doSendMessage() {
-        // TODO
-    }
+  }
 
-    /**
-     * You may change the cell factory if you changed the design of {@code Message} model. Hint: you
-     * may also define a cell factory for the chats displayed in the left panel, or simply override
-     * the toString method.
-     */
-    private class MessageCellFactory implements Callback<ListView<Message>, ListCell<Message>> {
+  /**
+   * A new dialog should contain a multi-select list, showing all user's name. You can select
+   * several users that will be joined in the group chat, including yourself.
+   * <p>
+   * The naming rule for group chats is similar to WeChat: If there are > 3 users: display the first
+   * three usernames, sorted in lexicographic order, then use ellipsis with the number of users, for
+   * example: UserA, UserB, UserC... (10) If there are <= 3 users: do not display the ellipsis, for
+   * example: UserA, UserB (2)
+   */
+  @FXML
+  public void createGroupChat() {
+  }
+
+  /**
+   * Sends the message to the <b>currently selected</b> chat.
+   * <p>
+   * Blank messages are not allowed. After sending the message, you should clear the text input
+   * field.
+   */
+  @FXML
+  public void doSendMessage() {
+    // TODO
+  }
+
+  /**
+   * You may change the cell factory if you changed the design of {@code Message} model. Hint: you
+   * may also define a cell factory for the chats displayed in the left panel, or simply override
+   * the toString method.
+   */
+  private class MessageCellFactory implements
+      Callback<ListView<MessageSent>, ListCell<MessageSent>> {
+
+    @Override
+    public ListCell<MessageSent> call(ListView<MessageSent> param) {
+      return new ListCell<MessageSent>() {
 
         @Override
-        public ListCell<Message> call(ListView<Message> param) {
-            return new ListCell<Message>() {
+        public void updateItem(MessageSent msg, boolean empty) {
+          super.updateItem(msg, empty);
+          if (empty || Objects.isNull(msg)) {
+            return;
+          }
 
-                @Override
-                public void updateItem(Message msg, boolean empty) {
-                    super.updateItem(msg, empty);
-                    if (empty || Objects.isNull(msg)) {
-                        return;
-                    }
+          HBox wrapper = new HBox();
+          Label nameLabel = new Label(msg.getSentBy());
+          Label msgLabel = new Label(msg.getData());
 
-                    HBox wrapper = new HBox();
-                    Label nameLabel = new Label(msg.getSentBy());
-                    Label msgLabel = new Label(msg.getData());
+          nameLabel.setPrefSize(50, 20);
+          nameLabel.setWrapText(true);
+          nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
 
-                    nameLabel.setPrefSize(50, 20);
-                    nameLabel.setWrapText(true);
-                    nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
+          if (username.equals(msg.getSentBy())) {
+            wrapper.setAlignment(Pos.TOP_RIGHT);
+            wrapper.getChildren().addAll(msgLabel, nameLabel);
+            msgLabel.setPadding(new Insets(0, 20, 0, 0));
+          } else {
+            wrapper.setAlignment(Pos.TOP_LEFT);
+            wrapper.getChildren().addAll(nameLabel, msgLabel);
+            msgLabel.setPadding(new Insets(0, 0, 0, 20));
+          }
 
-                    if (username.equals(msg.getSentBy())) {
-                        wrapper.setAlignment(Pos.TOP_RIGHT);
-                        wrapper.getChildren().addAll(msgLabel, nameLabel);
-                        msgLabel.setPadding(new Insets(0, 20, 0, 0));
-                    } else {
-                        wrapper.setAlignment(Pos.TOP_LEFT);
-                        wrapper.getChildren().addAll(nameLabel, msgLabel);
-                        msgLabel.setPadding(new Insets(0, 0, 0, 20));
-                    }
-
-                    setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                    setGraphic(wrapper);
-                }
-            };
+          setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+          setGraphic(wrapper);
         }
+      };
     }
+  }
 }
