@@ -3,32 +3,37 @@ package cn.edu.sustech.cs209.chatting.client;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.MessageSent;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
-import com.sun.xml.internal.bind.v2.model.core.Adapter;
+import cn.edu.sustech.cs209.chatting.common.ChatRoom;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
-import java.util.ArrayList;
+import java.net.URL;
 import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-
-import java.net.URL;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 public class Controller implements Initializable {
@@ -39,7 +44,7 @@ public class Controller implements Initializable {
   ListView<MessageSent> chatContentList;//保留的文本信息
 
   @FXML
-  private ListView<?> chatList;//可选的聊天人群
+  private ListView<ChatRoom> chatList;//可选的聊天人群
   @FXML
   private TextArea inputArea;//输入的文本
   @FXML
@@ -47,9 +52,11 @@ public class Controller implements Initializable {
   @FXML
   private Label currentUsername;
   String username;
+  private ObjectOutputStream out;
   public static ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(16, 32, 1,
       TimeUnit.MINUTES, new ArrayBlockingQueue<>(16));
   private clientListener listener;
+
 
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -67,9 +74,15 @@ public class Controller implements Initializable {
                      if so, ask the user to change the username
              */
       username = input.get();
-      listener = new clientListener("localhost", 1234, username, this);
+      try {
+        listener = new clientListener("localhost", 1234, username, this);
+        out = listener.getOut();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       //将监听器加入到线程池
       poolExecutor.execute(listener);
+
     } else {
       System.out.println("Invalid username " + input + ", exiting");
       Platform.exit();
@@ -110,7 +123,29 @@ public class Controller implements Initializable {
     // TODO: if the current user already chatted with the selected user, just open the chat with that user
     // TODO: otherwise, create a new chat item in the left panel, the title should be the selected user's name
     System.out.println("Selected user: " + user.get());
+    String SelUser = user.get();
+    if (SelUser != null) {
+      requirePrivateChat(SelUser);//向服务端请求对应的聊天
+    }
+  }
 
+  public void addChatList(ChatRoom chatRoom) {
+    chatList.getItems().add(chatRoom);
+    chatList.impl_updatePeer();
+  }
+
+  public void requirePrivateChat(String SUser) throws IOException {
+    Message message = new Message(MessageType.C_S_requirePrivateChat);
+    message.setUsername(username);
+    message.setSUser(SUser);
+    out.writeObject(message);
+    out.flush();
+  }
+
+
+  public void loadChatContentList(ObservableList<MessageSent> arr) {
+    chatContentList.setItems(arr);
+    chatList.impl_updatePeer();
   }
 
   /**

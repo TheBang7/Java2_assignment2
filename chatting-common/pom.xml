@@ -10,4 +10,12 @@
     </parent>
 
     <artifactId>chatting-common</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>cn.edu.sustech.cs209.chatting</groupId>
+      <artifactId>chatting-server</artifactId>
+      <version>dev-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 </project>

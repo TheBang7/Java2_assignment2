@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 
 public class clientListener implements Runnable {
 
@@ -27,24 +28,26 @@ public class clientListener implements Runnable {
   public static clientListener instance;
 
   public clientListener(String hostname, int port, String username,
-      Controller chatController) {
+      Controller chatController) throws IOException {
     this.hostname = hostname;
     this.port = port;
     this.username = username;
 
     this.chatController = chatController;
     instance = this;
+
+    socket = new Socket(hostname, port);
+    outputStream = socket.getOutputStream();
+    out = new ObjectOutputStream(outputStream);
+    inputStream = socket.getInputStream();
+    in = new ObjectInputStream(inputStream);
   }
 
   @Override
   public void run() {
     //获取socket对象
     try {
-      socket = new Socket(hostname, port);
-      outputStream = socket.getOutputStream();
-      out = new ObjectOutputStream(outputStream);
-      inputStream = socket.getInputStream();
-      in = new ObjectInputStream(inputStream);
+
       firstTimeRegister();//检查是否有重复
 
       while (socket.isConnected()) {
@@ -70,6 +73,12 @@ public class clientListener implements Runnable {
             chatController.UserList.add(message.getUsername());
             chatController.upDateUsers();
             System.out.println(chatController.UserList);
+            break;
+          case S_C_sendPrivateChat:
+            System.out.println("S_C_sendPrivateChat:" + message.getS_C_Messages());
+            chatController.loadChatContentList(
+                FXCollections.observableList(message.getChatRoom().getMessages()));
+            chatController.addChatList(message.getChatRoom());
             break;
           default:
             break;
@@ -99,5 +108,15 @@ public class clientListener implements Runnable {
     out.flush();
   }
 
+  public void requirePrivateChat(String SUser) throws IOException {
+    Message message = new Message(MessageType.C_S_requirePrivateChat);
+    message.setUsername(username);
+    message.setSUser(SUser);
+    out.writeObject(message);
+    out.flush();
+  }
 
+  public ObjectOutputStream getOut() {
+    return out;
+  }
 }
