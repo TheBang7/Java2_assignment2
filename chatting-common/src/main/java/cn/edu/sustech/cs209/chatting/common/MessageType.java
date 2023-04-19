@@ -10,6 +10,7 @@ public enum MessageType  {
   S_C_UserSentToCheck,//服务端发向客户端，发送一个userList用于检查是否重复
   C_S_requirePrivateChat,//客户端发向服务端，请求对应的聊天室
   S_C_sendPrivateChat,//服务端发向客户端，建立对应的聊天室
+  S_C_updateMessage,//更新所有用户的信息列表
 
 
 }

@@ -1,13 +1,15 @@
 package cn.edu.sustech.cs209.chatting.client;
 
+import cn.edu.sustech.cs209.chatting.common.ChatRoom;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.MessageSent;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
-import cn.edu.sustech.cs209.chatting.common.ChatRoom;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -16,6 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -29,9 +32,11 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -44,7 +49,7 @@ public class Controller implements Initializable {
   ListView<MessageSent> chatContentList;//保留的文本信息
 
   @FXML
-  private ListView<ChatRoom> chatList;//可选的聊天人群
+  private ListView<String> chatList;//可选的聊天人群
   @FXML
   private TextArea inputArea;//输入的文本
   @FXML
@@ -56,6 +61,7 @@ public class Controller implements Initializable {
   public static ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(16, 32, 1,
       TimeUnit.MINUTES, new ArrayBlockingQueue<>(16));
   private clientListener listener;
+  private ChatRoom chatRoom;
 
 
   @Override
@@ -65,8 +71,8 @@ public class Controller implements Initializable {
     dialog.setTitle("Login");
     dialog.setHeaderText(null);
     dialog.setContentText("Username:");
-    ;
 
+    chatRoom = null;
     Optional<String> input = dialog.showAndWait();
     if (input.isPresent() && !input.get().isEmpty()) {
             /*
@@ -77,12 +83,11 @@ public class Controller implements Initializable {
       try {
         listener = new clientListener("localhost", 1234, username, this);
         out = listener.getOut();
+        poolExecutor.execute(listener);
+        //将监听器加入到线程池
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      //将监听器加入到线程池
-      poolExecutor.execute(listener);
-
     } else {
       System.out.println("Invalid username " + input + ", exiting");
       Platform.exit();
@@ -91,8 +96,15 @@ public class Controller implements Initializable {
   }
 
   public void upDateUsers() {
-    currentUsername.setText("CurrentUser:" + username);
-    currentOnlineCnt.setText(String.valueOf("currentOnlineCnt:" + UserList.size()));
+    Platform.runLater(() -> currentUsername.setText("CurrentUser:" + username));
+    Platform.runLater(() -> currentOnlineCnt.setText("currentOnlineCnt:" + UserList.size()));
+    Platform.runLater(() -> currentUsername.impl_updatePeer());
+    Platform.runLater(() -> currentOnlineCnt.impl_updatePeer());
+    ArrayList<String> a = new ArrayList<>(UserList);
+    a.remove(username);
+    ObservableList<String> arr1 = FXCollections.observableList(a);
+    Platform.runLater(() -> chatList.setItems(arr1));
+    Platform.runLater(() -> chatList.impl_updatePeer());
   }
 
   @FXML
@@ -129,10 +141,6 @@ public class Controller implements Initializable {
     }
   }
 
-  public void addChatList(ChatRoom chatRoom) {
-    chatList.getItems().add(chatRoom);
-    chatList.impl_updatePeer();
-  }
 
   public void requirePrivateChat(String SUser) throws IOException {
     Message message = new Message(MessageType.C_S_requirePrivateChat);
@@ -143,9 +151,12 @@ public class Controller implements Initializable {
   }
 
 
-  public void loadChatContentList(ObservableList<MessageSent> arr) {
-    chatContentList.setItems(arr);
-    chatList.impl_updatePeer();
+  public void loadChatContentList(Message message) {
+    this.chatRoom = message.getChatRoom();
+    ObservableList<MessageSent> arr = FXCollections.observableList(
+        message.getChatRoom().getMessages());
+    Platform.runLater(() -> chatContentList.setItems(arr));
+    Platform.runLater(() -> chatContentList.impl_updatePeer());
   }
 
   /**
@@ -159,6 +170,33 @@ public class Controller implements Initializable {
    */
   @FXML
   public void createGroupChat() {
+    List<String> selectedUsers = new ArrayList<>();
+    Stage stage = new Stage();
+    ListView<String> userSelector = new ListView<>();
+    userSelector.setItems(chatList.getItems());
+    userSelector.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+    Button okBtn = new Button("OK");
+    okBtn.setOnAction(e -> {
+      selectedUsers.addAll(userSelector.getSelectionModel().getSelectedItems());
+      stage.close();
+    });
+
+    VBox box = new VBox(10);
+    box.setAlignment(Pos.CENTER);
+    box.setPadding(new Insets(20, 20, 20, 20));
+    box.getChildren().addAll(userSelector, okBtn);
+    stage.setScene(new Scene(box));
+    stage.showAndWait();
+
+    if (!selectedUsers.isEmpty()) {
+      System.out.println("Selected users: " + selectedUsers);
+      requireGroupChat(selectedUsers); //向服务端请求对应的聊天
+    }
+  }
+
+  private void requireGroupChat(List<String> selectedUsers) {
+
   }
 
   /**
@@ -168,8 +206,27 @@ public class Controller implements Initializable {
    * field.
    */
   @FXML
-  public void doSendMessage() {
+  public void doSendMessage() throws IOException {
     // TODO
+    String s = inputArea.getText();
+    if (!Objects.equals(s, "")) {
+      Message message = new Message(MessageType.sendMessage);
+      MessageSent m = new MessageSent(System.currentTimeMillis(), username, chatRoom.getChatRoom(),
+          s);
+      message.setMessageSent(m);
+      out.writeObject(message);
+      out.flush();
+      Platform.runLater(() -> inputArea.clear());
+    }
+  }
+
+  public void updateMessage(Message message) {
+    if (chatRoom != null && chatRoom.getChatRoom().equals(message.getChatRoom().getChatRoom())) {
+      ObservableList<MessageSent> arr = FXCollections.observableList(
+          message.getChatRoom().getMessages());
+      Platform.runLater(() -> chatContentList.setItems(arr));
+      Platform.runLater(() -> chatContentList.impl_updatePeer());
+    }
   }
 
   /**
@@ -188,6 +245,8 @@ public class Controller implements Initializable {
         public void updateItem(MessageSent msg, boolean empty) {
           super.updateItem(msg, empty);
           if (empty || Objects.isNull(msg)) {
+            setText(null);
+            setGraphic(null);
             return;
           }
 

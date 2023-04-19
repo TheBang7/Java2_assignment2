@@ -27,7 +27,7 @@ public class Message implements Serializable {
   }
 
   public void setChatRoom(ChatRoom chatRoom) {
-    this.chatRoom = chatRoom;
+    this.chatRoom = new ChatRoom(chatRoom);
   }
 
   public void setS_C_Messages(ArrayList<MessageSent> s_C_Messages) {

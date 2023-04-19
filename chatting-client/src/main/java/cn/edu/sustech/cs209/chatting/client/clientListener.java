@@ -9,7 +9,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 
 public class clientListener implements Runnable {
 
@@ -75,11 +74,12 @@ public class clientListener implements Runnable {
             System.out.println(chatController.UserList);
             break;
           case S_C_sendPrivateChat:
-            System.out.println("S_C_sendPrivateChat:" + message.getS_C_Messages());
-            chatController.loadChatContentList(
-                FXCollections.observableList(message.getChatRoom().getMessages()));
-            chatController.addChatList(message.getChatRoom());
+            System.out.println("S_C_sendPrivateChat:" + message.getChatRoom());
+            chatController.loadChatContentList(message);
             break;
+          case S_C_updateMessage:
+            System.out.println("S_C_updateMessage");
+            chatController.updateMessage(message);
           default:
             break;
         }

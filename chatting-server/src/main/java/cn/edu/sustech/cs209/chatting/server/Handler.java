@@ -2,6 +2,7 @@ package cn.edu.sustech.cs209.chatting.server;
 
 import cn.edu.sustech.cs209.chatting.common.ChatRoom;
 import cn.edu.sustech.cs209.chatting.common.Message;
+import cn.edu.sustech.cs209.chatting.common.MessageSent;
 import cn.edu.sustech.cs209.chatting.common.MessageType;
 import cn.edu.sustech.cs209.chatting.common.RoomType;
 import java.io.IOException;
@@ -10,9 +11,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 
 public class Handler implements Runnable {
 
@@ -47,8 +47,6 @@ public class Handler implements Runnable {
             System.out.println("GetUserListToCheck");
             sendUserListToUpdate();
             break;
-          case sendMessage:
-            break;
           case C_S_addNewUser:
             System.out.println("addNewUser");
             addNewUser(message);
@@ -56,6 +54,9 @@ public class Handler implements Runnable {
           case C_S_requirePrivateChat:
             System.out.println("requirePrivateChat");
             requirePrivateChat(message);
+            break;
+          case sendMessage:
+            dealMessage(message);
             break;
           default:
             break;
@@ -68,15 +69,31 @@ public class Handler implements Runnable {
     }
   }
 
+  private void dealMessage(Message message) throws IOException {
+    MessageSent m = message.getMessageSent();
+    ChatRoom room1 = Server.Messages.get(m.getSentBy()).get(m.getSendTo());
+    Message back = new Message(MessageType.S_C_updateMessage);
+    room1.addMessage(m);
+    back.setChatRoom(new ChatRoom(room1));
+    out.writeObject(back);
+    out.flush();
+
+    ChatRoom room2 = Server.Messages.get(m.getSendTo()).get(m.getSentBy());
+    room2.addMessage(m);
+    back = new Message(MessageType.S_C_updateMessage);
+    back.setChatRoom(new ChatRoom(room2));
+    ObjectOutputStream o = Server.UserToWriter.get(m.getSendTo());
+    o.writeObject(back);
+    o.flush();
+
+  }
+
+
   private void addNewUser(Message message) throws IOException {
     Server.UserList.add(message.getUsername());
     Server.writers.add(out);
     Server.UserToWriter.put(message.getUsername(), out);
     Server.Messages.put(message.getUsername(), new HashMap<>());
-
-//    Server.Messages.get(message.getUsername()).put("TheBang", new ArrayList<>());
-//    Server.Messages.get(message.getUsername()).get("TheBang").add(new MessageSent(1L, "TheBang",
-//        message.getUsername(), "Hello"));//调试代码
 
     System.out.println(Server.UserList);
     Message message1 = new Message(MessageType.S_C_addNewUser);
@@ -110,14 +127,14 @@ public class Handler implements Runnable {
     if (t.containsKey(user2)) {
       sendPrivateChat(t.get(user2));
     } else {
-      List<String> list = new ArrayList<>();
+      HashSet<String> list = new HashSet<>();
       list.add(user1);
       list.add(user2);
       ChatRoom r1 = new ChatRoom(user2, user1, RoomType.one, list);
       t.put(user2, r1);
       ChatRoom r2 = new ChatRoom(user1, user2, RoomType.one, list);
-      Server.Messages.get(user2)
-          .put(user1, r2);
+      Server.Messages.get(user1).put(user2, r1);
+      Server.Messages.get(user2).put(user1, r2);
       sendPrivateChat(t.get(user2));
     }
 

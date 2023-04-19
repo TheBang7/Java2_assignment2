@@ -22,9 +22,6 @@ public class Server {
       TimeUnit.MINUTES, new ArrayBlockingQueue<>(16));
 
   public static void main(String[] args) {
-    UserList.add("TheBang");
-    Messages.put("TheBang", new HashMap<>());
-
     try (ServerSocket listener = new ServerSocket(1234)) {
       while (true) {
         poolExecutor.execute(new Handler(listener.accept()));
