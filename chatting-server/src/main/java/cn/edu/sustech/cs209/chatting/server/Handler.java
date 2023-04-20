@@ -11,8 +11,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 
 public class Handler implements Runnable {
 
@@ -55,8 +56,14 @@ public class Handler implements Runnable {
             System.out.println("requirePrivateChat");
             requirePrivateChat(message);
             break;
-          case sendMessage:
+          case C_S_sendMessageToPrivate:
             dealMessage(message);
+            break;
+          case C_S_requireGroupChat:
+            creatGroupChat(message);
+            break;
+          case C_S_sendMessageToGroup:
+            dealGroupMessage(message);
             break;
           default:
             break;
@@ -64,6 +71,39 @@ public class Handler implements Runnable {
       }//处理服务端发来的所有信息
 
 
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void creatGroupChat(Message message) {
+    List<String> users = message.getSelectedUsers();
+    StringBuilder s = new StringBuilder(message.getUsername());
+    if (users.size() == 0) {
+      return;
+    } else if (users.size() < 3) {
+      for (String t : users) {
+        s.append(",").append(t);
+      }
+    } else {
+      for (int i = 0; i < 2; i++) {
+        s.append(",").append(users.get(i));
+      }
+      s.append(" (").append(users.size()).append(1).append(")...");
+    }
+    users.add(message.getUsername());
+    ChatRoom room = new ChatRoom(s.toString(), message.getUsername(), RoomType.group,
+        users);//生成新的聊天室
+    Message back = new Message(MessageType.S_C_sendGroupChat);
+    back.setChatRoom(room);
+    try {
+      for (String user : users) {
+        Server.UserToGroup.get(user).put(room.getChatRoom(), room);
+        ObjectOutputStream o = Server.UserToWriter.get(user);
+        back.setUsername(user);
+        o.writeObject(back);
+        o.flush();
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -88,12 +128,28 @@ public class Handler implements Runnable {
 
   }
 
+  private void dealGroupMessage(Message message) throws IOException {
+    MessageSent m = message.getMessageSent();
+    ChatRoom room = Server.UserToGroup.get(message.getUsername())
+        .get(message.getMessageSent().getSendTo());
+
+    Message back = new Message(MessageType.S_C_updateGroupMessage);
+    room.addMessage(m);
+    back.setChatRoom(room);
+    for (String user : room.getUsers()) {
+      ObjectOutputStream o = Server.UserToWriter.get(user);
+      o.writeObject(back);
+      o.flush();
+    }
+  }
+
 
   private void addNewUser(Message message) throws IOException {
     Server.UserList.add(message.getUsername());
     Server.writers.add(out);
     Server.UserToWriter.put(message.getUsername(), out);
     Server.Messages.put(message.getUsername(), new HashMap<>());
+    Server.UserToGroup.put(message.getUsername(), new HashMap<>());
 
     System.out.println(Server.UserList);
     Message message1 = new Message(MessageType.S_C_addNewUser);
@@ -127,7 +183,7 @@ public class Handler implements Runnable {
     if (t.containsKey(user2)) {
       sendPrivateChat(t.get(user2));
     } else {
-      HashSet<String> list = new HashSet<>();
+      ArrayList<String> list = new ArrayList<>();
       list.add(user1);
       list.add(user2);
       ChatRoom r1 = new ChatRoom(user2, user1, RoomType.one, list);

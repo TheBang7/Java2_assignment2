@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +22,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -44,6 +46,7 @@ import javafx.util.Callback;
 public class Controller implements Initializable {
 
   public HashSet<String> UserList;
+  public HashMap<String, GroupChatController> GroupToCtrl;
 
   @FXML
   ListView<MessageSent> chatContentList;//保留的文本信息
@@ -73,6 +76,7 @@ public class Controller implements Initializable {
     dialog.setContentText("Username:");
 
     chatRoom = null;
+    GroupToCtrl = new HashMap<>();
     Optional<String> input = dialog.showAndWait();
     if (input.isPresent() && !input.get().isEmpty()) {
             /*
@@ -169,7 +173,7 @@ public class Controller implements Initializable {
    * example: UserA, UserB (2)
    */
   @FXML
-  public void createGroupChat() {
+  public void createGroupChat() throws IOException {
     List<String> selectedUsers = new ArrayList<>();
     Stage stage = new Stage();
     ListView<String> userSelector = new ListView<>();
@@ -195,8 +199,32 @@ public class Controller implements Initializable {
     }
   }
 
-  private void requireGroupChat(List<String> selectedUsers) {
+  public void S_C_GroupChat(Message message) throws IOException {
+    Platform.runLater(() -> {
+      FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("GroupChat.fxml"));
+      Stage stage = new Stage();
+      try {
+        stage.setScene(new Scene(fxmlLoader.load()));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      stage.setTitle("GroupChat");
+            stage.show();
+      GroupChatController groupChatController = fxmlLoader.getController();
+      GroupToCtrl.put(message.getChatRoom().getChatRoom(), groupChatController);
+      message.setOut(out);
+      message.setUsername(username);
+      groupChatController.reload(message);
+    });
+  }
 
+
+  private void requireGroupChat(List<String> selectedUsers) throws IOException {
+    Message message = new Message(MessageType.C_S_requireGroupChat);
+    message.setSelectedUsers(selectedUsers);
+    message.setUsername(username);
+    out.writeObject(message);
+    out.flush();
   }
 
   /**
@@ -210,7 +238,7 @@ public class Controller implements Initializable {
     // TODO
     String s = inputArea.getText();
     if (!Objects.equals(s, "")) {
-      Message message = new Message(MessageType.sendMessage);
+      Message message = new Message(MessageType.C_S_sendMessageToPrivate);
       MessageSent m = new MessageSent(System.currentTimeMillis(), username, chatRoom.getChatRoom(),
           s);
       message.setMessageSent(m);
@@ -228,6 +256,12 @@ public class Controller implements Initializable {
       Platform.runLater(() -> chatContentList.impl_updatePeer());
     }
   }
+
+  public void updateGroupMessage(Message message) {
+    GroupChatController c = GroupToCtrl.get(message.getChatRoom().getChatRoom());
+    c.updateMessage(message);
+  }
+
 
   /**
    * You may change the cell factory if you changed the design of {@code Message} model. Hint: you

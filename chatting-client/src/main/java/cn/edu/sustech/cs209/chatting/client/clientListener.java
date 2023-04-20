@@ -80,6 +80,12 @@ public class clientListener implements Runnable {
           case S_C_updateMessage:
             System.out.println("S_C_updateMessage");
             chatController.updateMessage(message);
+            break;
+          case S_C_sendGroupChat:
+            chatController.S_C_GroupChat(message);
+            break;
+          case S_C_updateGroupMessage:
+            chatController.updateGroupMessage(message);
           default:
             break;
         }

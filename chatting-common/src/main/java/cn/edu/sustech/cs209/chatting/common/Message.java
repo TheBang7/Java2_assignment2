@@ -1,5 +1,6 @@
 package cn.edu.sustech.cs209.chatting.common;
 
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,12 +15,32 @@ public class Message implements Serializable {
   String SUser;
   ArrayList<MessageSent> S_C_Messages;
   ChatRoom chatRoom;
+  List<String> selectedUsers;
+  ObjectOutputStream out;
 
   public Message(MessageType messageType) {
     this.type = messageType;
     messageSent = null;
     users = new HashSet<>();
     S_C_Messages = null;
+    selectedUsers=new ArrayList<>();
+    out=null;
+  }
+
+  public ObjectOutputStream getOut() {
+    return out;
+  }
+
+  public void setOut(ObjectOutputStream out) {
+    this.out = out;
+  }
+
+  public List<String> getSelectedUsers() {
+    return selectedUsers;
+  }
+
+  public void setSelectedUsers(List<String> selectedUsers) {
+    this.selectedUsers = selectedUsers;
   }
 
   public ChatRoom getChatRoom() {
