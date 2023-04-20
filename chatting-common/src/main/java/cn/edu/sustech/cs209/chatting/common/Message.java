@@ -10,21 +10,66 @@ public class Message implements Serializable {
 
   MessageType type;
   MessageSent messageSent;
-  HashSet<String> users;
+  HashSet<String> userNames;
+  HashSet<MyUser> users;
   String username;
   String SUser;
   ArrayList<MessageSent> S_C_Messages;
   ChatRoom chatRoom;
   List<String> selectedUsers;
   ObjectOutputStream out;
+  MyUser user;
+  String tell;
+  byte[] data;
+  String filename;
 
   public Message(MessageType messageType) {
     this.type = messageType;
     messageSent = null;
-    users = new HashSet<>();
+    userNames = new HashSet<>();
     S_C_Messages = null;
-    selectedUsers=new ArrayList<>();
-    out=null;
+    selectedUsers = new ArrayList<>();
+    out = null;
+  }
+
+  public HashSet<MyUser> getUsers() {
+    return users;
+  }
+
+  public void setUsers(HashSet<MyUser> users) {
+    this.users = users;
+  }
+
+  public String getFilename() {
+    return filename;
+  }
+
+  public void setFilename(String filename) {
+    this.filename = filename;
+  }
+
+  public byte[] getData() {
+    return data;
+  }
+
+  public void setData(byte[] data) {
+    this.data = data;
+  }
+
+  public String getTell() {
+    return tell;
+  }
+
+  public void setTell(String tell) {
+    this.tell = tell;
+  }
+
+  public MyUser getUser() {
+    return user;
+  }
+
+  public void setUser(MyUser user) {
+    this.user = user;
   }
 
   public ObjectOutputStream getOut() {
@@ -75,16 +120,16 @@ public class Message implements Serializable {
     return type;
   }
 
-  public HashSet<String> getUsers() {
-    return users;
+  public HashSet<String> getUserNames() {
+    return userNames;
   }
 
   public void setType(MessageType type) {
     this.type = type;
   }
 
-  public void setUsers(HashSet<String> users) {
-    this.users = users;
+  public void setUserNames(HashSet<String> userNames) {
+    this.userNames = userNames;
   }
 
   public String getUsername() {

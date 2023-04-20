@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.SplitPane?>
@@ -11,7 +12,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
-
 <VBox prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cn.edu.sustech.cs209.chatting.client.GroupChatController">
    <HBox prefHeight="39.0" prefWidth="900.0">
       <children>
@@ -49,6 +49,9 @@
       </textFill>
     </Label>
     <Pane HBox.hgrow="ALWAYS" />
+    <VBox spacing="5">
+      <ComboBox fx:id="emojiComboBox" promptText="Select Emoji"/>
+    </VBox>
     <Label fx:id="currentOnlineCnt" font="$x3" text="Online: 1" textFill="$x4" HBox.hgrow="NEVER" />
   </HBox>
 </VBox>

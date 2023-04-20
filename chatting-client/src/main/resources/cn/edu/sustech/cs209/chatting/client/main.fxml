@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Menu?>
@@ -14,9 +15,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
-
 <VBox prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="cn.edu.sustech.cs209.chatting.client.Controller">
+  fx:controller="cn.edu.sustech.cs209.chatting.client.Controller" >
     <MenuBar VBox.vgrow="NEVER">
         <Menu mnemonicParsing="false" text="Chat">
             <MenuItem mnemonicParsing="false" onAction="#createPrivateChat" text="New Private Chat"/>
@@ -48,6 +48,19 @@
             </textFill>
         </Label>
         <Pane HBox.hgrow="ALWAYS"/>
-        <Label fx:id="currentOnlineCnt" font="$x3" text="Online: 1" textFill="$x4" HBox.hgrow="NEVER"/>
+        <VBox spacing="5">
+            <ComboBox fx:id="emojiComboBox" promptText="Select Emoji"/>
+        </VBox>
+        <Button mnemonicParsing="false" onAction="#chooseFile" text="Choose File"/>
+        <Label fx:id="filePathLabel" maxHeight="1.7976931348623157E308" text="" HBox.hgrow="ALWAYS">
+            <font>
+                <Font size="11.0" fx:id="x5"/>
+            </font>
+            <textFill>
+                <Color red="0.625" green="0.625" blue="0.625" fx:id="x6"/>
+            </textFill>
+        </Label>
+        <Label fx:id="currentOnlineCnt" font="$x5" text="Online: 1" textFill="$x6" HBox.hgrow="NEVER"/>
     </HBox>
+
 </VBox>

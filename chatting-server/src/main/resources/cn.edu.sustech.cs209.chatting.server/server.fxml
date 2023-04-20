@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+  xmlns:fx="http://javafx.com/fxml"
+  fx:controller="cn.edu.sustech.cs209.chatting.server.ServerController">
+
+  <Label text="服务器正在运行" fx:id="serverStatusLabel"/>
+  <Label fx:id="userCountLabel"/>
+
+</VBox>
