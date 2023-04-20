@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.event.EventHandler?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -14,9 +15,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
-
 <VBox prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="cn.edu.sustech.cs209.chatting.client.Controller">
+  fx:controller="cn.edu.sustech.cs209.chatting.client.Controller" >
     <MenuBar VBox.vgrow="NEVER">
         <Menu mnemonicParsing="false" text="Chat">
             <MenuItem mnemonicParsing="false" onAction="#createPrivateChat" text="New Private Chat"/>
@@ -50,4 +50,5 @@
         <Pane HBox.hgrow="ALWAYS"/>
         <Label fx:id="currentOnlineCnt" font="$x3" text="Online: 1" textFill="$x4" HBox.hgrow="NEVER"/>
     </HBox>
+
 </VBox>

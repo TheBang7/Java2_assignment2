@@ -97,6 +97,25 @@ public class Controller implements Initializable {
       Platform.exit();
     }
     chatContentList.setCellFactory(new MessageCellFactory());
+    chatList.setOnMouseClicked(event -> {
+      if (event.getClickCount() == 2) {
+        String selectedItem = chatList.getSelectionModel().getSelectedItem();
+        try {
+          requirePrivateChat(selectedItem);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        System.out.println("Clicked on " + selectedItem);
+      }
+    });
+
+  }
+
+  public void quit() throws IOException {
+    Message message=new Message(MessageType.C_S_quit);
+    message.setUsername(username);
+    out.writeObject(message);
+    out.close();
   }
 
   public void upDateUsers() {
@@ -209,7 +228,7 @@ public class Controller implements Initializable {
         throw new RuntimeException(e);
       }
       stage.setTitle("GroupChat");
-            stage.show();
+      stage.show();
       GroupChatController groupChatController = fxmlLoader.getController();
       GroupToCtrl.put(message.getChatRoom().getChatRoom(), groupChatController);
       message.setOut(out);

@@ -15,6 +15,8 @@ public enum MessageType {
   C_S_requireGroupChat,//用于请求群聊
   S_C_sendGroupChat,//用于生成新的群聊
   S_C_updateGroupMessage,//用于发送群聊信息
+  C_S_quit,//用户退出服务器
+  S_C_quitSuccessfully,//用户成功退出服务器
 
 
 }

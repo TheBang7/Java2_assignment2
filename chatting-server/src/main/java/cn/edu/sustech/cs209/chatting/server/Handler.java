@@ -65,6 +65,9 @@ public class Handler implements Runnable {
           case C_S_sendMessageToGroup:
             dealGroupMessage(message);
             break;
+          case C_S_quit:
+            dealQuit(message);
+            socket.close();
           default:
             break;
         }
@@ -74,6 +77,10 @@ public class Handler implements Runnable {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  private void dealQuit(Message message) {
+    String user = message.getUsername();
   }
 
   private void creatGroupChat(Message message) {
