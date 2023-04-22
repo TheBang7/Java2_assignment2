@@ -490,6 +490,9 @@ public class Controller implements Initializable {
     for (GroupChatController c : GroupToCtrl.values()) {
       c.removeUser(message);
     }
+    if (chatRoom.getChatRoom().equals(message.getUsername())) {
+      chatRoom = null;
+    }
   }
 
   public void removeFromGroup(Message message) {
