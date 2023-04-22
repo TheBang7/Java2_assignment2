@@ -61,7 +61,7 @@ public class Server implements Serializable {
     try (ServerSocket listener = new ServerSocket(1234)) {
 
       while (true) {
-        poolExecutor.execute(new Handler(listener.accept(), server));
+        poolExecutor.execute(new MyHandler(listener.accept(), server));
       }
     } catch (IOException e) {
       e.printStackTrace();

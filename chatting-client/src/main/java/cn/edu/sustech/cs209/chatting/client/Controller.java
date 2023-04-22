@@ -200,9 +200,6 @@ public class Controller implements Initializable {
     message.setUser(user);
     out.writeObject(message);
     out.flush();
-    Platform.exit();
-    poolExecutor.shutdownNow();
-    System.exit(1);
   }
 
   public void upDateUsers() {

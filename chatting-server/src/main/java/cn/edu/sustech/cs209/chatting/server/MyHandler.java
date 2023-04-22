@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class Handler implements Runnable {
+public class MyHandler implements Runnable {
 
   private final Socket socket;
 
@@ -27,7 +27,7 @@ public class Handler implements Runnable {
   private Server server;
 
 
-  public Handler(Socket socket, Server server) {
+  public MyHandler(Socket socket, Server server) {
     this.socket = socket;
     this.server = server;
   }
@@ -39,6 +39,7 @@ public class Handler implements Runnable {
       in = new ObjectInputStream(inputStream);
       outputStream = socket.getOutputStream();
       out = new ObjectOutputStream(outputStream);
+      boolean f = false;
       while (socket.isConnected()) {
         Message message = (Message) in.readObject();
         switch (message.getType()) {
@@ -71,7 +72,7 @@ public class Handler implements Runnable {
             break;
           case C_S_quit:
             dealQuit(message);
-            socket.close();
+            f = true;
             break;
           case C_S_quitFromGroup:
             dealQuitFromGroup(message);
@@ -82,6 +83,10 @@ public class Handler implements Runnable {
           default:
             break;
         }
+        if (f) {
+          break;
+        }
+
       }//处理服务端发来的所有信息
 
 
@@ -105,6 +110,10 @@ public class Handler implements Runnable {
   }
 
   private void dealQuit(Message message) throws IOException {
+    Message b2 = new Message(MessageType.S_C_quitSuccessfully);
+    out.writeObject(b2);
+    out.flush();
+
     String username = message.getUsername();
     MyUser user = server.nameToUser.get(username);
     server.CurrentUserList.remove(user);
@@ -118,6 +127,7 @@ public class Handler implements Runnable {
       o.writeObject(back);
       o.flush();
     }
+
   }
 
   private void SendFileToPrivate(Message message) throws IOException {

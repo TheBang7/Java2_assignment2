@@ -92,6 +92,11 @@ public class clientListener implements Runnable {
           case S_C_removeFromGroup:
             chatController.removeFromGroup(message);
             break;
+          case S_C_quitSuccessfully:
+            chatController.showMessage("Quit successfully!");
+            socket.close();
+            System.exit(0); // 正常终止程序
+            break;
           default:
             break;
         }

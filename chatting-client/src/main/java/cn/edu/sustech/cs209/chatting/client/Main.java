@@ -21,7 +21,6 @@ public class Main extends Application {
     stage.setOnCloseRequest(event -> {
       Controller c = fxmlLoader.getController();
       try {
-
         c.quit();
       } catch (IOException e) {
         throw new RuntimeException(e);
