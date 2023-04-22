@@ -491,6 +491,7 @@ public class Controller implements Initializable {
       c.removeUser(message);
     }
     if (chatRoom.getChatRoom().equals(message.getUsername())) {
+      showMessage(chatRoom.getChatRoom() + " is offline now");
       chatRoom = null;
     }
   }
