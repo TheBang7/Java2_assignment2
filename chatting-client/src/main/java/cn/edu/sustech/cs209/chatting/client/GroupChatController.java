@@ -59,6 +59,7 @@ public class GroupChatController implements Initializable {
   private List<String> UserList;
   ObjectOutputStream out;
   ChatRoom chatRoom;
+  Controller controller;
   @FXML
   private ComboBox<String> emojiComboBox;
 
@@ -110,7 +111,7 @@ public class GroupChatController implements Initializable {
 
   }
 
-  public void reload(Message message) {
+  public void reload(Message message, Controller controller) {
     username = message.getUsername();
     UserList = message.getChatRoom().getUsers();
     Platform.runLater(() -> {
@@ -121,6 +122,7 @@ public class GroupChatController implements Initializable {
     loadChatContentList(message);
     out = message.getOut();
     chatRoom = message.getChatRoom();
+    this.controller = controller;
   }
 
   public void upDateUsers() {
@@ -147,7 +149,7 @@ public class GroupChatController implements Initializable {
   public void removeUser(Message message) {
     UserList.remove(message.getUsername());
     if (UserList.size() <= 1) {
-      Platform.exit();
+      controller.removeGroup(chatRoom.getChatRoom());
     }
     upDateUsers();
   }

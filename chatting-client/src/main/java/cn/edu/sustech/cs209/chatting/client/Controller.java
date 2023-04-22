@@ -53,6 +53,7 @@ public class Controller implements Initializable {
   public HashSet<MyUser> UserList;
   public HashMap<String, MyUser> nameToUser;
   public HashMap<String, GroupChatController> GroupToCtrl;
+  public HashMap<String, Stage> GroupToStage;
 
   @FXML
   ListView<MessageSent> chatContentList; //保留的文本信息
@@ -80,6 +81,7 @@ public class Controller implements Initializable {
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
     nameToUser = new HashMap<>();
+    GroupToStage = new HashMap<>();
     poolExecutor = new ThreadPoolExecutor(16, 32, 1,
         TimeUnit.MINUTES, new ArrayBlockingQueue<>(16));
     ObservableList<String> emojiList = FXCollections.observableArrayList(
@@ -338,10 +340,20 @@ public class Controller implements Initializable {
       stage.show();
       GroupChatController groupChatController = fxmlLoader.getController();
       GroupToCtrl.put(message.getChatRoom().getChatRoom(), groupChatController);
+      GroupToStage.put(message.getChatRoom().getChatRoom(), stage);
       message.setOut(out);
       message.setUsername(username);
-      groupChatController.reload(message);
+      groupChatController.reload(message, this);
     });
+  }
+
+  public void removeGroup(String group) {
+    GroupToCtrl.remove(group);
+    Platform.runLater(() -> {
+      GroupToStage.get(group).close();
+      GroupToStage.remove(group);
+    });
+
   }
 
 
