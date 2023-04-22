@@ -8,26 +8,26 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
-    public static void main(String[] args) throws IOException {
-        launch();
-    }
+  public static void main(String[] args) throws IOException {
+    launch();
+  }
 
-    @Override
-    public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("main.fxml"));
-        Scene scene = new Scene(fxmlLoader.load());
-        stage.setScene(scene);
-        stage.setTitle("Chatting Client");
-        stage.setOnCloseRequest(event -> {
-            Controller c = fxmlLoader.getController();
-            try {
+  @Override
+  public void start(Stage stage) throws IOException {
+    FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("main.fxml"));
+    Scene scene = new Scene(fxmlLoader.load());
+    stage.setScene(scene);
+    stage.setTitle("Chatting Client");
+    stage.setOnCloseRequest(event -> {
+      Controller c = fxmlLoader.getController();
+      try {
 
-                c.quit();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            System.exit(0);
-        });
-        stage.show();
-    }
+        c.quit();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      System.exit(0);
+    });
+    stage.show();
+  }
 }
