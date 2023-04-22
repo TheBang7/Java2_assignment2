@@ -490,7 +490,7 @@ public class Controller implements Initializable {
     for (GroupChatController c : GroupToCtrl.values()) {
       c.removeUser(message);
     }
-    if (chatRoom.getChatRoom().equals(message.getUsername())) {
+    if (chatRoom != null && chatRoom.getChatRoom().equals(message.getUsername())) {
       showMessage(chatRoom.getChatRoom() + " is offline now");
       chatRoom = null;
     }
