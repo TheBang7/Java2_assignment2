@@ -44,10 +44,10 @@ public class MyHandler implements Runnable {
         Message message = (Message) in.readObject();
         switch (message.getType()) {
           case C_S_register:
-            dealRegister(message);
+            f = dealRegister(message);
             break;
           case C_S_login:
-            dealLogin(message);
+            f = dealLogin(message);
             break;
           case C_S_GetUserList://发送并更新用户列表
             System.out.println("GetUserList");
@@ -140,12 +140,14 @@ public class MyHandler implements Runnable {
     o.flush();
   }
 
-  private void dealRegister(Message message) throws IOException {
+  private boolean dealRegister(Message message) throws IOException {
     MyUser user = message.getUser();
     String username = user.getUsername();
+    boolean f = false;
     Message back = new Message(MessageType.S_C_Register);
-    if (server.nameToUser.containsKey(username)) {
+    if (server.RegUserNameList.contains(username)) {
       back.setTell("Exist " + username);
+      f = true;
     } else {
       server.nameToUser.put(username, user);
       back.setTell("success");
@@ -154,17 +156,20 @@ public class MyHandler implements Runnable {
     back.setUser(user);
     out.writeObject(back);
     out.flush();
+    return f;
   }
 
-  private void dealLogin(Message message) throws IOException {
+  private boolean dealLogin(Message message) throws IOException {
     MyUser user = message.getUser();
     String username = user.getUsername();
     Message back = new Message(MessageType.S_C_Login);
+    boolean f = false;
     if (!server.nameToUser.containsKey(username)) {
       back.setTell("notExist");
+      f = true;
     } else if (server.CurrentUserNameList.contains(username)) {
       back.setTell("This account is online!");
-
+      f = true;
     } else {
       String pastWord = user.getPassWord();
       String TPastWord = server.nameToUser.get(username).getPassWord();
@@ -178,6 +183,7 @@ public class MyHandler implements Runnable {
     back.setUser(user);
     out.writeObject(back);
     out.flush();
+    return f;
   }
 
 

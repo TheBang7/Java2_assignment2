@@ -38,6 +38,7 @@ public class Server implements Serializable {
 
   public static void main(String[] args) throws IOException {
     Server server = loadServer("chatting-server/src/main/resources/save.txt");
+    System.out.println(server.RegUserNameList);
     Thread thread = new Thread(() -> {
       Scanner scanner = new Scanner(System.in);
       while (true) {

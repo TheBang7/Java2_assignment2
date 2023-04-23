@@ -129,6 +129,7 @@ public class clientListener implements Runnable {
     } else {
       System.out.println(message.getTell());
       chatController.MyQuit();
+      System.exit(0);
     }
   }
 
@@ -138,6 +139,7 @@ public class clientListener implements Runnable {
     } else {
       System.out.println(message.getTell());
       chatController.MyQuit();
+      System.exit(0);
     }
   }
 
